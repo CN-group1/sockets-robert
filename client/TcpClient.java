@@ -1,5 +1,6 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
@@ -18,6 +19,7 @@ import java.nio.charset.StandardCharsets;
  */
 public final class TcpClient {
     private static final int DEFAULT_PORT = 5000;
+    private static volatile boolean running = true;
 
     private TcpClient() {
     }
@@ -36,33 +38,60 @@ public final class TcpClient {
             System.out.println("Connected to " + cfg.host + ":" + cfg.port);
 
             if (cfg.message != null) {
-                sendLineAndPrintResponse(cfg.message, socketOut, socketIn);
+                sendLine(cfg.message, socketOut);
+                String response = socketIn.readLine();
+                if (response == null) {
+                    System.out.println("Server closed the connection.");
+                    return;
+                }
+                System.out.println("server> " + response);
                 return;
             }
 
+            Thread receiver = startReceiver(socketIn);
             System.out.println("Type messages and press Enter (Ctrl+Z then Enter to quit):");
             String line;
-            while ((line = consoleIn.readLine()) != null) {
-                sendLineAndPrintResponse(line, socketOut, socketIn);
+            while (running && (line = consoleIn.readLine()) != null) {
+                sendLine(line, socketOut);
+            }
+            running = false;
+            try {
+                receiver.join(300);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }
     }
 
-    private static void sendLineAndPrintResponse(
+    private static Thread startReceiver(BufferedReader socketIn) {
+        Thread receiver = new Thread(() -> {
+            try {
+                String response;
+                while (running && (response = socketIn.readLine()) != null) {
+                    System.out.println("server> " + response);
+                }
+                if (running) {
+                    System.out.println("Server closed the connection.");
+                }
+            } catch (IOException e) {
+                if (running) {
+                    System.out.println("Receive error: " + e.getMessage());
+                }
+            }
+            running = false;
+        });
+        receiver.setDaemon(true);
+        receiver.start();
+        return receiver;
+    }
+
+    private static void sendLine(
         String line,
-        BufferedWriter socketOut,
-        BufferedReader socketIn
+        BufferedWriter socketOut
     ) throws Exception {
         socketOut.write(line);
         socketOut.write('\n');
         socketOut.flush();
-
-        String response = socketIn.readLine();
-        if (response == null) {
-            System.out.println("Server closed the connection.");
-            return;
-        }
-        System.out.println("server> " + response);
     }
 
     private static final class Config {
@@ -84,22 +113,22 @@ public final class TcpClient {
             for (int i = 0; i < args.length; i++) {
                 String arg = args[i];
                 switch (arg) {
-                    case "--host":
+                    case "--host" -> {
                         host = requireValue(args, ++i, "--host");
-                        break;
-                    case "--port":
+                    }
+                    case "--port" -> {
                         port = Integer.parseInt(requireValue(args, ++i, "--port"));
-                        break;
-                    case "--message":
+                    }
+                    case "--message" -> {
                         message = requireValue(args, ++i, "--message");
-                        break;
-                    case "--help":
-                    case "-h":
+                    }
+                    case "--help", "-h" -> {
                         printUsageAndExit(0);
-                        break;
-                    default:
+                    }
+                    default -> {
                         System.err.println("Unknown argument: " + arg);
                         printUsageAndExit(1);
+                    }
                 }
             }
 
