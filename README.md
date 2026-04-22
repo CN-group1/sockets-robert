@@ -20,3 +20,4 @@ Opțional: setează `ZT_HOST` și/sau `PORT` în mediu în loc de argumente.
 **Care sunt flag-urile TCP observate la `.close()`?**
 
 _(Completează aici după captură: de obicei vei vedea schimb de segmente **FIN** și confirmări **ACK**; uneori **RST** dacă conexiunea e închisă brusc. Notează exact ce apare la tine.)_
+<img width="1911" height="668" alt="image" src="https://github.com/user-attachments/assets/6f40eea3-798b-4772-9355-5fb0ed03b196" />
