@@ -12,7 +12,7 @@ Opțional: setează `ZT_HOST` și/sau `PORT` în mediu în loc de argumente.
 ## Protocol pentru client (Student B, alt limbaj)
 
 - **Codificare:** UTF-8 peste tot.
-- **TCP:** un mesaj text = o linie terminată cu `\n` (LF). Serverul răspunde cu linii `OK <text_primit>\n`.
+- **TCP:** un mesaj text = o linie terminată cu `\n` (LF). **Bidirecțional:** liniile introduse la consola serverului sunt trimise către client (UTF-8). Liniile primite apar ca `peer> ...`. Implicit, serverul trimite și confirmări `OK <text_primit>\n` după fiecare linie primită; pornește cu `--no-echo` dacă vrei doar mesajele tale spre client.
 - **UDP:** un datagram = un mesaj text UTF-8 care conține numărul secvenței (ex. `42` sau `MSG 42`). Serverul așteaptă id-uri distincte de la `1` la `100` (implicit); mesajele duplicate sau în afara intervalului sunt numărate separat.
 
 ## Întrebare finală (Wireshark — închidere conexiune TCP)
